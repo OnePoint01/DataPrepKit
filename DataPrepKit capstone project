@@ -1,0 +1,29 @@
+#1
+!pip install pandas ## if the package pandas is not downloaded
+import pandas as pd ## import the package pandas
+df = pd.read_csv('names.csv') # reading from file #Change names.csv to your file name
+#2
+df.iloc[5:16,[0,2]] #get the rows 5 to 16 in the colomns 0 and 2
+df.head(10) #to get the first 10 rows default is 5
+df.tail(10) #to get the last 10 rows default is 5
+df['weight_KG'] = df['Weight'] / 2.20462 ## make a colomn has the weight change from lbs to kg
+df['height_KG'] = df['Height'] * 2.54    ## make a colomn has the height change from in to cm
+df['volume'] = df['Weight'] / df['Height']  ## make a colomn has the volume
+df['BMI'] = (df['Weight'] / (df['Height']**2))*1000 ## make a colomn has BMI
+import numpy as np ## import NumPy package
+df['health'] = np.where(df['BMI'] < 18.5, 'Underweight', np.where((df['BMI'] >= 18.5) & (df['BMI'] < 24.9), 'Normal weight', np.where((df['BMI'] >= 24.9) & (df['BMI'] < 30), "Overweight", "Obesity")))
+# categorize the BMI values
+#3
+def check_empty(Age):
+    if Age == 0:
+        return 'No Age!'
+    else:
+        return Age
+df['Age_check'] = df['Age'].apply(check_empty)
+df = df.drop_duplicates()
+
+#4 
+groups = df.groupby('health')
+ #5 
+#was not explained in the course!!!
+########################################
