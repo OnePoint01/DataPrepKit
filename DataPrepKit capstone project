@@ -43,7 +43,7 @@ class DataPrepKit:
 
 
 #########################################################################################
-an example to use the code above:
+############################ An example to use the code above: ##########################
 
 # Import the necessary libraries
 import pandas as pd
