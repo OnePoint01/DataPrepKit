@@ -1,29 +1,67 @@
-#1
-!pip install pandas ## if the package pandas is not downloaded
-import pandas as pd ## import the package pandas
-df = pd.read_csv('names.csv') # reading from file #Change names.csv to your file name
-#2
-df.iloc[5:16,[0,2]] #get the rows 5 to 16 in the colomns 0 and 2
-df.head(10) #to get the first 10 rows default is 5
-df.tail(10) #to get the last 10 rows default is 5
-df['weight_KG'] = df['Weight'] / 2.20462 ## make a colomn has the weight change from lbs to kg
-df['height_KG'] = df['Height'] * 2.54    ## make a colomn has the height change from in to cm
-df['volume'] = df['Weight'] / df['Height']  ## make a colomn has the volume
-df['BMI'] = (df['Weight'] / (df['Height']**2))*1000 ## make a colomn has BMI
-import numpy as np ## import NumPy package
-df['health'] = np.where(df['BMI'] < 18.5, 'Underweight', np.where((df['BMI'] >= 18.5) & (df['BMI'] < 24.9), 'Normal weight', np.where((df['BMI'] >= 24.9) & (df['BMI'] < 30), "Overweight", "Obesity")))
-# categorize the BMI values
-#3
-def check_empty(Age):
-    if Age == 0:
-        return 'No Age!'
-    else:
-        return Age
-df['Age_check'] = df['Age'].apply(check_empty)
-df = df.drop_duplicates()
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
 
-#4 
-groups = df.groupby('health')
- #5 
-#was not explained in the course!!!
-########################################
+class DataPrepKit:
+    def __init__(self, data):
+        self.data = data
+
+    # Data Reading
+    @staticmethod
+    def read_data(file_path, file_type):
+        if file_type == 'csv':
+            return pd.read_csv(file_path)
+        elif file_type == 'excel':
+            return pd.read_excel(file_path)
+        elif file_type == 'json':
+            return pd.read_json(file_path)
+        else:
+            print("Unsupported file type")
+            return None
+
+    # Data Summary
+    def data_summary(self):
+        return self.data.describe(include='all')
+
+    # Handling Missing Values
+    def handle_missing_values(self, strategy):
+        if strategy == 'drop':
+            return self.data.dropna()
+        elif strategy == 'mean':
+            return self.data.fillna(self.data.mean())
+        else:
+            print("Unsupported strategy")
+            return None
+
+    # Categorical Data Encoding
+    def encode_categorical_data(self):
+        le = LabelEncoder()
+        for column in self.data.columns:
+            if self.data[column].dtype == 'object':
+                self.data[column] = le.fit_transform(self.data[column])
+        return self.data
+
+
+#########################################################################################
+an example to use the code above:
+
+# Import the necessary libraries
+import pandas as pd
+from sklearn.datasets import load_iris
+
+# Load a sample dataset
+iris = load_iris()
+iris_df = pd.DataFrame(data=iris.data, columns=iris.feature_names)
+
+# Initialize the DataPrepKit class with the iris dataset
+data_prep = DataPrepKit(iris_df)
+
+# Get a summary of the data
+summary = data_prep.data_summary()
+print(summary)
+
+# Handle missing values by dropping them
+data_no_missing_values = data_prep.handle_missing_values('drop')
+
+# Encode categorical data
+encoded_data = data_prep.encode_categorical_data()
