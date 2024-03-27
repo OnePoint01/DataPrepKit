@@ -1,67 +1,104 @@
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import LabelEncoder
+import os
 
-class DataPrepKit:
-    def __init__(self, data):
-        self.data = data
+def read_data():
+    # Ask user to input data path
+    data_path = input("Please enter the data path: ")
 
-    # Data Reading
-    @staticmethod
-    def read_data(file_path, file_type):
-        if file_type == 'csv':
-            return pd.read_csv(file_path)
-        elif file_type == 'excel':
-            return pd.read_excel(file_path)
-        elif file_type == 'json':
-            return pd.read_json(file_path)
+    # Get the file extension
+    _, file_extension = os.path.splitext(data_path)
+
+    # Determine the type of the data and read it
+    if file_extension == '.csv':
+        data = pd.read_csv(data_path)
+    elif file_extension == '.json':
+        data = pd.read_json(data_path)
+    elif file_extension == '.txt':
+        with open(data_path, 'r') as f:
+            data = f.read()
+    else:
+        print("Unsupported file format.")
+        data = None
+
+    return data
+
+def handle_missing_values(data):
+    # Check if the data is a DataFrame
+    if isinstance(data, pd.DataFrame):
+        # Ask user to choose the technique for continuous and categorical data
+        continuous_technique = input("Please enter the technique for continuous data (mean, median, or mode). If you don't choose, the default is mean: ") or "mean"
+        categorical_technique = input("Please enter the technique for categorical data (most_frequent or constant). If you don't choose, the default is most_frequent: ") or "most_frequent"
+
+        # Handle missing values for continuous data
+        if continuous_technique in ["mean", "median", "mode"]:
+            continuous_columns = data.select_dtypes(include=[np.number]).columns
+            for column in continuous_columns:
+                if continuous_technique == "mean":
+                    data[column].fillna(data[column].mean(), inplace=True)
+                elif continuous_technique == "median":
+                    data[column].fillna(data[column].median(), inplace=True)
+                elif continuous_technique == "mode":
+                    data[column].fillna(data[column].mode()[0], inplace=True)
         else:
-            print("Unsupported file type")
-            return None
+            print("Invalid technique for continuous data. Please choose mean, median, or mode.")
 
-    # Data Summary
-    def data_summary(self):
-        return self.data.describe(include='all')
-
-    # Handling Missing Values
-    def handle_missing_values(self, strategy):
-        if strategy == 'drop':
-            return self.data.dropna()
-        elif strategy == 'mean':
-            return self.data.fillna(self.data.mean())
+        # Handle missing values for categorical data
+        if categorical_technique in ["most_frequent", "constant"]:
+            categorical_columns = data.select_dtypes(include=['object']).columns
+            for column in categorical_columns:
+                if categorical_technique == "most_frequent":
+                    data[column].fillna(data[column].mode()[0], inplace=True)
+                elif categorical_technique == "constant":
+                    data[column].fillna("missing", inplace=True)
         else:
-            print("Unsupported strategy")
-            return None
+            print("Invalid technique for categorical data. Please choose most_frequent or constant.")
+    else:
+        print("The data is not a pandas DataFrame. Please load the data into a DataFrame first.")
 
-    # Categorical Data Encoding
-    def encode_categorical_data(self):
-        le = LabelEncoder()
-        for column in self.data.columns:
-            if self.data[column].dtype == 'object':
-                self.data[column] = le.fit_transform(self.data[column])
-        return self.data
+    return data
 
+def encode_categorical_data(data):
+    # Check if the data is a DataFrame
+    if isinstance(data, pd.DataFrame):
+        # Ask user to choose the technique for encoding categorical data
+        encoding_technique = input("Please enter the technique for encoding categorical data (label or one_hot). If you don't choose, the default is label: ") or "label"
 
-#########################################################################################
-############################ An example to use the code above: ##########################
+        # Handle encoding for categorical data
+        if encoding_technique in ["label", "one_hot"]:
+            categorical_columns = data.select_dtypes(include=['object']).columns
+            for column in categorical_columns:
+                if encoding_technique == "label":
+                    data[column] = data[column].astype('category').cat.codes
+                elif encoding_technique == "one_hot":
+                    one_hot = pd.get_dummies(data[column], prefix=column)
+                    data = pd.concat([data, one_hot], axis=1)
+                    data.drop([column], axis=1, inplace=True)
+        else:
+            print("Invalid technique for encoding categorical data. Please choose label or one_hot.")
+    else:
+        print("The data is not a pandas DataFrame. Please load the data into a DataFrame first.")
 
-# Import the necessary libraries
-import pandas as pd
-from sklearn.datasets import load_iris
+    return data
 
-# Load a sample dataset
-iris = load_iris()
-iris_df = pd.DataFrame(data=iris.data, columns=iris.feature_names)
+def drop_columns(data):
+    # Check if the data is a DataFrame
+    if isinstance(data, pd.DataFrame):
+        # Ask user if they want to drop some columns
+        drop_columns = input("Do you want to drop some columns? (yes or no) If yes, please enter the column names separated by comma, the default is no: ") or "no"
 
-# Initialize the DataPrepKit class with the iris dataset
-data_prep = DataPrepKit(iris_df)
+        # Handle dropping columns
+        if drop_columns.lower() != "no":
+            columns_to_drop = drop_columns.split(",")
+            data.drop(columns_to_drop, axis=1, inplace=True)
+    else:
+        print("The data is not a pandas DataFrame. Please load the data into a DataFrame first.")
 
-# Get a summary of the data
-summary = data_prep.data_summary()
-print(summary)
+    return data
 
-# Handle missing values by dropping them
-data_no_missing_values = data_prep.handle_missing_values('drop')
-
-# Encode categorical data
-encoded_data = data_prep.encode_categorical_data()
+# Call the functions
+data = read_data()
+data = handle_missing_values(data)
+data = encode_categorical_data(data)
+data = drop_columns(data)
+print_summary(data)
